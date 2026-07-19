@@ -1,0 +1,20 @@
+# Data
+/data/
+
+# Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+/docs/build/
+/docs/site/
+.CondaPkg/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+*.swp
+
+# Environment
+.env
