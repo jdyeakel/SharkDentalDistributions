@@ -6,21 +6,19 @@ distributions against empirical shark tooth measurements — the model behind Ki
 Yeakel et al. (2022), *"Decoding the dynamics of dental distributions,"* Proc. R.
 Soc. B 289: 20220808.
 
-It is a from-scratch reimplementation of the original `sharksims_*.jl` /
-`sharkcompare_*.jl` scripts and `src/*.jl` helpers one level up in this repository —
-not a fork of them. It is validated to reproduce their numerical output exactly (see
-[Validation](#validation)) and fixes one real bug found along the way (see
-[Known issues found and fixed](#known-issues-found-and-fixed)).
+This is the public release of the analysis code behind that paper: a clean,
+from-scratch reimplementation of the original scripts, restructured as a
+self-contained package meant to be picked up and used de novo — no access to the
+original (unpublished) code required. It reproduces the original published results
+exactly (see [Validation](#validation)) and fixes one real bug found along the way
+(see [Known issues found and fixed](#known-issues-found-and-fixed)).
 
-## Why this exists
+## Design
 
-The original pipeline works, but scenario parameters (temperature ranges, migration
-distance, grid resolution, body size) were copy-pasted and hand-edited across
-near-duplicate driver scripts (`sharksims_modern.jl`, `sharksims_eocene.jl`,
-`sharksims_eocene_lowlatitude.jl`, ...), which is how a couple of real inconsistencies
-crept in undetected. This package instead expresses every scenario as one
-`SiteConfig` value with named presets, and swaps `@distributed`/`SharedArray`
-parallelism for `Threads.@threads`.
+Every scenario (temperature ranges, migration distance, grid resolution, body size)
+is expressed as a single `SiteConfig` value with named presets rather than
+hand-edited per-scenario scripts, and simulation parallelism uses `Threads.@threads`
+throughout.
 
 ## Repository layout
 
@@ -31,18 +29,18 @@ SharkDentalDynamics/
 ├── src/
 │   ├── SharkDentalDynamics.jl          # module entry point; see its docstring for the full public API
 │   ├── config.jl                       # SiteConfig struct + modern()/eocene_highlatitude()/eocene_lowlatitude() presets
-│   ├── growth.jl                       # ontogenetic growth model (was ts.jl) + precompute_growth (config-only setup)
-│   ├── simulate.jl                     # the Gillespie metapopulation kernel (was popgen_migrate_g.jl) + tooth_length() + SimulationTimeout
-│   ├── shape_descriptors.jl            # mean/median/quartiles/modality of a density (was toothdist_*_analysis.jl, modality_analysis.jl)
-│   ├── compare.jl                      # empirical-vs-simulated error terms + error surface + best-fit search (was empirical_sim_comparison.jl + the sharkcompare_*.jl reduction/best-fit logic)
-│   ├── library.jl                      # build_library!() + JLD2 read/write (was the sharksims_*.jl driver loops + smartpath.jl)
-│   └── plotting.jl                     # native Julia (Plots.jl) figures (replaces the RCall/R sections of sharkcompare_*.jl)
+│   ├── growth.jl                       # ontogenetic growth model + precompute_growth (config-only setup)
+│   ├── simulate.jl                     # the Gillespie metapopulation kernel + tooth_length() + SimulationTimeout
+│   ├── shape_descriptors.jl            # mean/median/quartiles/modality of a density
+│   ├── compare.jl                      # empirical-vs-simulated error terms + error surface + best-fit search
+│   ├── library.jl                      # build_library!() + JLD2 read/write
+│   └── plotting.jl                     # native Julia (Plots.jl) figures
 ├── test/
-│   └── runtests.jl                     # self-contained unit tests (no dependency on the legacy code)
+│   └── runtests.jl                     # unit tests: presets, growth precomputation, shape descriptors, simulation determinism, a full tiny-grid build_library!/compare_site run
 ├── scripts/
-│   ├── check_legacy_equivalence.jl     # seeded numerical comparison against the legacy ../../src/*.jl (see Validation)
-│   ├── reproduce_figures.jl            # regenerates the three published-comparison figures from the existing legacy data/ libraries
-│   └── example_new_site.jl             # worked template: free parameters -> fresh build_library! -> compare -> plot (see Running a new empirical-site comparison)
+│   ├── check_legacy_equivalence.jl     # internal validation only -- needs the original (unpublished) analysis code, not included here (see Validation)
+│   ├── reproduce_figures.jl            # regenerates the three published-comparison figures; needs the original simulation libraries (see Reproducing the published figures) or a fresh build_library! run
+│   └── example_new_site.jl             # worked template: free parameters -> fresh build_library! -> compare -> plot -- the recommended starting point for a new site (see Running a new empirical-site comparison)
 ├── empirical/
 │   ├── SandTiger_all.csv               # local copy -- the five originally-published sites (used by reproduce_figures.jl)
 │   └── SandTiger_all_2026.csv          # local copy -- adds Blackheath (used by example_new_site.jl)
@@ -55,11 +53,10 @@ SharkDentalDynamics/
 Scripts are meant to be run from the package root (so `--project=.` resolves correctly),
 e.g. `julia --project=. -t auto scripts/reproduce_figures.jl`.
 
-**Deliberately out of scope for this package:** the tooth-seasonality variant
-(`popgen_migrate_g_toothseasonality.jl`), and performance optimizations to the
-Gillespie inner loop that were identified but not applied (a few redundant/dead
-computations — see git history / prior discussion). Both are natural follow-ups but
-weren't needed to reproduce the published results.
+**Deliberately out of scope for this package:** a tooth-seasonality variant of the
+model, and a few redundant/dead-computation optimizations identified in the Gillespie
+inner loop but not applied. Both are natural follow-ups but weren't needed to
+reproduce the published results.
 
 ## Setup
 
@@ -113,32 +110,24 @@ paper for the underlying logic.
 
 The three published comparisons (Delaware Bay/modern, Banks Island + Seymour
 Island/eocene high-latitude, Red Hot Truck Stop + Whiskey Bridge/eocene low-latitude)
-can be regenerated **without rebuilding any simulation library** — they read the
-already-built legacy-format libraries one level up in this repo
-(`../data/sharks_modern2/`, `../data/sharks_eocene2/`,
-`../data/sharks_eocene_lowlatitude/`) directly, via `legacy_simdata_path` (the
-internal JLD2 keys are identical between formats; only the filename pattern
-differs — `simdata_<rep>_<sigtau_pos>_<tau_pos>.jld` vs this package's own
-`...jld2`).
+are already committed as PDFs in the package root
+(`fig_modern_julia.pdf`, `fig_eocene_highlatitude_julia.pdf`,
+`fig_eocene_lowlatitude_julia.pdf`), so you don't need to run anything to see them.
 
-```sh
-julia --project=. -t auto scripts/reproduce_figures.jl
-```
+`scripts/reproduce_figures.jl` regenerates those same three figures, but as written
+it points at the pre-built simulation libraries from the original development
+environment (not included in this repo) rather than rebuilding them. To reproduce the
+figures yourself from scratch, build fresh libraries with `build_library!` for each
+preset (`modern()`, `eocene_highlatitude()`, `eocene_lowlatitude()`) and swap the
+`path_fn = legacy_simdata_path, data_dir = ...` arguments in the script for your own
+`data_dir` — see `scripts/example_new_site.jl` for exactly that pattern applied to a
+new site. Note `eocene_highlatitude`'s full-resolution grid is expensive to build
+from scratch (~62,500 simulation runs); see the grid-resolution guidance below before
+committing to it.
 
-This reads real empirical measurements from the local `empirical/SandTiger_all.csv`
-(a tiny manual column parser is used, so there's no CSV.jl/DataFrames.jl dependency —
-see [Data](#data) for why this is a local copy rather than a `../` reference) and
-writes `fig_modern_julia.pdf`, `fig_eocene_highlatitude_julia.pdf`, and
-`fig_eocene_lowlatitude_julia.pdf` into the package root. Takes well under a minute on
-a multi-core machine (`eocene_highlatitude` alone touches ~125,000 saved simulation
-files across its 2 sites, so wall time scales with core count).
-
-If you don't have the legacy `../data/sharks_*` folders this reads from (e.g. on a
-fresh clone outside the `2018_sharks` monorepo), you'll need to either copy them over
-or build fresh libraries with this package's own `build_library!` (dropping the
-`path_fn = legacy_simdata_path` argument in `scripts/reproduce_figures.jl` once the
-new-format library exists at whatever `data_dir` you point it at) — see
-`scripts/example_new_site.jl` for exactly that pattern.
+The real empirical measurements these figures compare against live in the local
+`empirical/SandTiger_all.csv` (a tiny manual column parser is used, so there's no
+CSV.jl/DataFrames.jl dependency — see [Data](#data)).
 
 ## Running a new empirical-site comparison
 
@@ -266,73 +255,61 @@ only temperature differs between them in the original scripts, despite the name.
 
 ## Validation
 
-Two independent layers, both currently passing:
+This package's own test suite is runnable by anyone who clones this repo:
 
-1. **`test/runtests.jl`** — ordinary unit tests with no dependency on the legacy
-   code (presets, growth precomputation, shape descriptors, simulation determinism,
-   a full tiny-grid `build_library!`/`compare_site` end-to-end run).
+- **`test/runtests.jl`** — ordinary unit tests (presets, growth precomputation,
+  shape descriptors, simulation determinism, a full tiny-grid
+  `build_library!`/`compare_site` end-to-end run).
 
-   ```sh
-   julia --project=. -e 'using Pkg; Pkg.test()'
-   ```
+  ```sh
+  julia --project=. -e 'using Pkg; Pkg.test()'
+  ```
 
-2. **`scripts/check_legacy_equivalence.jl`** — seeds the *literal same* default RNG
-   before calling both the legacy `popgen_migrate_g` (`include`d fresh from
-   `../../src/`, in an isolated module so nothing here touches those files) and this
-   package's `simulate_metapopulation`, and asserts every output field is bit-for-bit
-   identical, across every grid corner of all three presets, plus a couple of
-   full-`gen`-scale realistic-timing checks. Also checks the deterministic
-   `compare_to_empirical` pipeline against the legacy `empirical_sim_comparison` on
-   synthetic input.
-
-   ```sh
-   julia --project=. -t auto scripts/check_legacy_equivalence.jl
-   ```
-
-   Read the comments at the top of that file before increasing the grid-corner
-   coverage or the realistic-timing section's `gen` — see the pathological-corner
-   note above.
+Separately, during development this reimplementation was checked bit-for-bit against
+the original (unpublished) analysis scripts via `scripts/check_legacy_equivalence.jl`,
+which seeded the *literal same* default RNG before calling both the original
+`popgen_migrate_g` and this package's `simulate_metapopulation` and asserted every
+output field was identical, across every grid corner of all three presets. That
+script requires the original scripts as a dependency and isn't runnable from this
+repo alone — it's kept here for provenance, and its result is what
+[Known issues found and fixed](#known-issues-found-and-fixed) below is based on.
 
 ## Known issues found and fixed
 
 Building this package as an independent reimplementation surfaced two real,
-previously-unnoticed issues in the *original* codebase (not just porting bugs —
-these affect the legacy scripts too, and one has since been fixed there as well):
+previously-unnoticed issues in the *original* codebase (not just porting bugs), both
+now corrected in this package's presets and pipeline:
 
-1. **`sharkcompare_modern.jl` reps-averaging bug (now fixed in both places).**
+1. **A reps-averaging bug in the original modern-site comparison.**
    4 of 7 shape-descriptor error terms (SD, median, Q25, Q75) were averaged across
    the wrong array axis (`dims=2`, the sigtau grid axis) instead of across
    replicates (`dims=1`), then only replicate #1's degenerate slice was kept and
    broadcast across every sigtau row. This meant those 4 terms contributed **no
    sigtau-axis information** to the Delaware Bay error surface/best-fit search —
-   only mean/mode/mode-distance did. Using the real saved `../data/sharks_modern2/`
-   library, the corrected values are ε_j = 1.35, ε_a = 0.30 (best-fit adult tau = 21
-   days), vs. the originally published ε_j = 1.40, ε_a = 0.74 (best-fit adult tau =
-   3 days) — the qualitative conclusion (adult site favored) holds either way and is
-   actually *stronger* once corrected, but the specific adult dispersal-window
-   estimate shifts substantially. **`sharkcompare_eocene.jl`/
-   `sharkcompare_eocene_lowlatitude.jl` were never affected** — they use a 4D
-   `(num, reps, sigtau, tau)` array layout where `dims=2` is the *correct* reps axis,
-   so all four Eocene site comparisons are unaffected and reproduce their published
-   values exactly (verified — see `scripts/reproduce_figures.jl`'s output). See
-   `error_surface`'s docstring in `src/compare.jl` for the full technical detail.
-   `sharkcompare_modern.jl` (one level up in this repo) has since been corrected to
-   `dims=1` to match.
+   only mean/mode/mode-distance did. Using the original simulation library, the
+   corrected values are ε_j = 1.35, ε_a = 0.30 (best-fit adult tau = 21 days), vs.
+   the originally published ε_j = 1.40, ε_a = 0.74 (best-fit adult tau = 3 days) —
+   the qualitative conclusion (adult site favored) holds either way and is actually
+   *stronger* once corrected, but the specific adult dispersal-window estimate shifts
+   substantially. **The Eocene site comparisons were never affected** — they use a
+   4D `(num, reps, sigtau, tau)` array layout where `dims=2` is the *correct* reps
+   axis, so all four Eocene site comparisons are unaffected and reproduce their
+   published values exactly. See `error_surface`'s docstring in `src/compare.jl` for
+   the full technical detail. This package's `compare.jl` implements the corrected
+   `dims=1` behavior.
 
 2. **`L=295` vs `L=477` (already fixed upstream long before this package).** An
-   earlier version of the Eocene simulation library (`data/sharks_eocene/`, git
-   history only, superseded ~2021) used an asymptotic body length too small to reach
-   the empirical maximum tooth length, meaning the model couldn't structurally
-   reproduce the largest observed fossil teeth. `data/sharks_eocene2/` (the current
-   library) fixed this; this package's `eocene_highlatitude`/`eocene_lowlatitude`
-   presets use the corrected `L=477`.
+   earlier version of the Eocene simulation library used an asymptotic body length
+   too small to reach the empirical maximum tooth length, meaning the model couldn't
+   structurally reproduce the largest observed fossil teeth. This was corrected well
+   before this package existed; this package's `eocene_highlatitude`/
+   `eocene_lowlatitude` presets use the corrected `L=477`.
 
 A few smaller, purely cosmetic/structural things inherited *by design* rather than
 fixed (see the relevant docstrings for why): `local_minima`'s endpoint check has a
-copy-paste bug inherited from the legacy `findlocalminima.jl` (checks the wrong
-inequality, so a trailing local minimum is never actually detected via that branch)
-— preserved for exact behavioral equivalence with the published figures rather than
-silently changed.
+copy-paste bug inherited from the original code (checks the wrong inequality, so a
+trailing local minimum is never actually detected via that branch) — preserved for
+exact behavioral equivalence with the published figures rather than silently changed.
 
 ## Data
 
@@ -344,9 +321,8 @@ differently on purpose:
   `SiteConfig` via `build_library!` — never hand-edit or commit its contents.
 - **`empirical/`** — real tooth-measurement CSVs, committed. These are small,
   human-collected data, not generated output, so they belong in version control;
-  scripts read them as **local copies** rather than reaching outside the package
-  (`../SandTiger_all.csv` etc.) specifically so this package keeps working if it's
-  ever cloned or pushed on its own, separate from the `2018_sharks` monorepo.
+  scripts read them as **local copies** within this package rather than reaching
+  outside it, so everything needed to run a comparison is self-contained here.
 
 `Manifest.toml` *is* committed, so cloning + `Pkg.instantiate()` reproduces the exact
 dependency versions this was built and validated against.
