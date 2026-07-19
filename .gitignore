@@ -1,6 +1,9 @@
 # Data
 /data/
 
+# Internal working notes
+/PERFORMANCE_NOTES.md
+
 # Julia
 *.jl.cov
 *.jl.*.cov
