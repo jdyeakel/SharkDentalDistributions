@@ -13,6 +13,10 @@ original (unpublished) code required. It reproduces the original published resul
 exactly (see [Validation](#validation)) and fixes one real bug found along the way
 (see [Known issues found and fixed](#known-issues-found-and-fixed)).
 
+The published manuscript and supplement are included for reference:
+[`Kim_ProcRoySoc_2022.pdf`](Kim_ProcRoySoc_2022.pdf) and
+[`Kim_ProcRoySoc_2022_supp.pdf`](Kim_ProcRoySoc_2022_supp.pdf).
+
 ## Design
 
 Every scenario (temperature ranges, migration distance, grid resolution, body size)
@@ -26,6 +30,8 @@ throughout.
 SharkDentalDynamics/
 ├── Project.toml                        # package manifest (deps: JLD2, KernelDensity, Plots, stdlibs)
 ├── Manifest.toml                       # locked dependency versions (commit this for reproducibility)
+├── Kim_ProcRoySoc_2022.pdf             # published manuscript
+├── Kim_ProcRoySoc_2022_supp.pdf        # published supplement
 ├── src/
 │   ├── SharkDentalDynamics.jl          # module entry point; see its docstring for the full public API
 │   ├── config.jl                       # SiteConfig struct + modern()/eocene_highlatitude()/eocene_lowlatitude() presets
@@ -44,9 +50,11 @@ SharkDentalDynamics/
 ├── empirical/
 │   ├── SandTiger_all.csv               # local copy -- the five originally-published sites (used by reproduce_figures.jl)
 │   └── SandTiger_all_2026.csv          # local copy -- adds Blackheath (used by example_new_site.jl)
-├── fig_modern_julia.pdf                # ) output of scripts/reproduce_figures.jl, committed for convenience
-├── fig_eocene_highlatitude_julia.pdf   # )
-├── fig_eocene_lowlatitude_julia.pdf    # )
+├── figures/                             # written here by reproduce_figures.jl / example_new_site.jl, committed for convenience
+│   ├── fig_modern_julia.pdf
+│   ├── fig_eocene_highlatitude_julia.pdf
+│   ├── fig_eocene_lowlatitude_julia.pdf
+│   └── fig_example_blackheath_julia.pdf
 └── data/                               # simulation libraries land here by default (gitignored; see Data below)
 ```
 
@@ -99,7 +107,7 @@ result.best_a   # (; error, sigtau, tau) -- best fit under the adult hypothesis
 # lower error => that hypothesis is the better-supported explanation for `measures`
 
 # 5. Plot (heatmaps + density-comparison panels, one row per site).
-plot_scenario(config, "data/my_run", [("My Site", measures)]; filename = "my_figure.pdf")
+plot_scenario(config, "data/my_run", [("My Site", measures)]; filename = "figures/my_figure.pdf")
 ```
 
 A lower `best_j.error` than `best_a.error` favors interpreting the empirical sample
@@ -110,7 +118,7 @@ paper for the underlying logic.
 
 The three published comparisons (Delaware Bay/modern, Banks Island + Seymour
 Island/eocene high-latitude, Red Hot Truck Stop + Whiskey Bridge/eocene low-latitude)
-are already committed as PDFs in the package root
+are already committed as PDFs in [`figures/`](figures/)
 (`fig_modern_julia.pdf`, `fig_eocene_highlatitude_julia.pdf`,
 `fig_eocene_lowlatitude_julia.pdf`), so you don't need to run anything to see them.
 
@@ -291,7 +299,12 @@ now corrected in this package's presets and pipeline:
    the originally published ε_j = 1.40, ε_a = 0.74 (best-fit adult tau = 3 days) —
    the qualitative conclusion (adult site favored) holds either way and is actually
    *stronger* once corrected, but the specific adult dispersal-window estimate shifts
-   substantially. **The Eocene site comparisons were never affected** — they use a
+   substantially — though both the original tau = 3 and corrected tau = 21 fall on
+   the same broad, shallow error-surface plateau the paper already acknowledges as
+   non-identifiable, so this isn't a case of the corrected estimate resolving
+   something the original one had pinned down; both are within the same
+   can't-distinguish region.
+   **The Eocene site comparisons were never affected** — they use a
    4D `(num, reps, sigtau, tau)` array layout where `dims=2` is the *correct* reps
    axis, so all four Eocene site comparisons are unaffected and reproduce their
    published values exactly. See `error_surface`'s docstring in `src/compare.jl` for

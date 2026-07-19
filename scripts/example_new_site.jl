@@ -54,7 +54,7 @@ data_dir = joinpath(PKG_ROOT, "data", "example_blackheath")
 csv_path = joinpath(PKG_ROOT, "empirical", "SandTiger_all_2026.csv")
 csv_column = 6   # Blackheath
 site_label = "Blackheath"
-figure_path = joinpath(PKG_ROOT, "fig_example_blackheath_julia.pdf")
+figure_path = joinpath(PKG_ROOT, "figures", "fig_example_blackheath_julia.pdf")
 # ================================================================================
 
 config = SiteConfig(;
@@ -93,5 +93,6 @@ println("  adult-site hypothesis:    error = $(round(result.best_a.error, digits
 verdict = result.best_j.error < result.best_a.error ? "juvenile/nursery site" : "adult site"
 println("  => better supported as a $verdict"); flush(stdout)
 
+mkpath(dirname(figure_path))
 plot_scenario(config, data_dir, [(site_label, measures)]; filename = figure_path)
 println("\nSaved figure -> $figure_path")

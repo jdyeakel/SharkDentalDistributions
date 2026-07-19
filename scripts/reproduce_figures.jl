@@ -31,25 +31,27 @@ end
 
 # Local copy (see empirical/) -- this script never reaches outside the package.
 csv_path = joinpath(PKG_ROOT, "empirical", "SandTiger_all.csv")
+figures_dir = joinpath(PKG_ROOT, "figures")
+mkpath(figures_dir)
 
 println("Reproducing modern (Delaware Bay) comparison figure...")
 modern_sites = [("Delaware Bay", read_csv_column(csv_path, 5))]
 plot_scenario(modern(), joinpath(LEGACY_ROOT, "data", "sharks_modern2"), modern_sites;
-    path_fn = legacy_simdata_path, filename = joinpath(PKG_ROOT, "fig_modern_julia.pdf"))
-println("  -> fig_modern_julia.pdf")
+    path_fn = legacy_simdata_path, filename = joinpath(figures_dir, "fig_modern_julia.pdf"))
+println("  -> figures/fig_modern_julia.pdf")
 
 println("Reproducing eocene high-latitude (Banks Island / Seymour Island) comparison figure...")
 highlat_sites = [("Banks Island", read_csv_column(csv_path, 3)),
                   ("Seymour Island", read_csv_column(csv_path, 4))]
 plot_scenario(eocene_highlatitude(), joinpath(LEGACY_ROOT, "data", "sharks_eocene2"), highlat_sites;
-    path_fn = legacy_simdata_path, filename = joinpath(PKG_ROOT, "fig_eocene_highlatitude_julia.pdf"))
-println("  -> fig_eocene_highlatitude_julia.pdf")
+    path_fn = legacy_simdata_path, filename = joinpath(figures_dir, "fig_eocene_highlatitude_julia.pdf"))
+println("  -> figures/fig_eocene_highlatitude_julia.pdf")
 
 println("Reproducing eocene low-latitude (Red Hot Truck Stop / Whiskey Bridge) comparison figure...")
 lowlat_sites = [("Red Hot Truck Stop", read_csv_column(csv_path, 1)),
                  ("Whiskey Bridge", read_csv_column(csv_path, 2))]
 plot_scenario(eocene_lowlatitude(), joinpath(LEGACY_ROOT, "data", "sharks_eocene_lowlatitude"), lowlat_sites;
-    path_fn = legacy_simdata_path, filename = joinpath(PKG_ROOT, "fig_eocene_lowlatitude_julia.pdf"))
-println("  -> fig_eocene_lowlatitude_julia.pdf")
+    path_fn = legacy_simdata_path, filename = joinpath(figures_dir, "fig_eocene_lowlatitude_julia.pdf"))
+println("  -> figures/fig_eocene_lowlatitude_julia.pdf")
 
 println("\nDone.")
