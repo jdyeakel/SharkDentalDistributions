@@ -111,14 +111,14 @@ plot_scenario(config, "data/my_run", [("My Site", measures)]; filename = "figure
 ```
 
 A lower `best_j.error` than `best_a.error` favors interpreting the empirical sample
-as a nursery/juvenile site, and vice versa — see equation 2.1 and section 2c of the
-paper for the underlying logic.
+as a nursery/juvenile site, and vice versa — see equation (2.1) in §2(c) ("Comparing
+observed and simulated dental distributions") of the paper for the underlying logic.
 
 ## Reproducing the published figures
 
-The three published comparisons (Delaware Bay/modern, Banks Island + Seymour
-Island/eocene high-latitude, Red Hot Truck Stop + Whiskey Bridge/eocene low-latitude)
-are already committed as PDFs in [`figures/`](figures/)
+The three published comparisons (Delaware Bay/modern — paper figure 4; Banks Island +
+Seymour Island/eocene high-latitude and Red Hot Truck Stop + Whiskey Bridge/eocene
+low-latitude — paper figure 5) are already committed as PDFs in [`figures/`](figures/)
 (`fig_modern_julia.pdf`, `fig_eocene_highlatitude_julia.pdf`,
 `fig_eocene_lowlatitude_julia.pdf`), so you don't need to run anything to see them.
 
@@ -242,7 +242,9 @@ regime).
 ## Presets reference
 
 Exact historical parameters, verified against the scripts that produced the
-published results:
+published results. Site temperature ranges come from the paper's electronic
+supplementary material, appendix III (referenced in §2(c)); reproduction/mortality
+rates and the growth model are described in §2(b) ("Population simulation").
 
 | param | `modern()` | `eocene_highlatitude()` | `eocene_lowlatitude()` |
 |---|---|---|---|
@@ -297,17 +299,21 @@ now corrected in this package's presets and pipeline:
    only mean/mode/mode-distance did. Using the original simulation library, the
    corrected values are ε_j = 1.35, ε_a = 0.30 (best-fit adult tau = 21 days), vs.
    the originally published ε_j = 1.40, ε_a = 0.74 (best-fit adult tau = 3 days) —
-   the qualitative conclusion (adult site favored) holds either way and is actually
-   *stronger* once corrected, but the specific adult dispersal-window estimate shifts
-   substantially — though both the original tau = 3 and corrected tau = 21 fall on
-   the same broad, shallow error-surface plateau the paper already acknowledges as
-   non-identifiable, so this isn't a case of the corrected estimate resolving
+   see §3(a) ("Discerning distributions of dentition") for the published values and
+   figure 4 for the error surfaces. The qualitative conclusion (adult site favored)
+   holds either way and is actually *stronger* once corrected, but the specific adult
+   dispersal-window estimate shifts substantially — though both the original tau = 3
+   and corrected tau = 21 fall on the same broad, shallow error-surface plateau the
+   paper already acknowledges as non-identifiable (§3(b), "the lowest 10% error
+   covers a wide range of possible values — from 1 to 40 days", referring to the dark
+   red region of figure 4b), so this isn't a case of the corrected estimate resolving
    something the original one had pinned down; both are within the same
    can't-distinguish region.
    **The Eocene site comparisons were never affected** — they use a
    4D `(num, reps, sigtau, tau)` array layout where `dims=2` is the *correct* reps
    axis, so all four Eocene site comparisons are unaffected and reproduce their
-   published values exactly. See `error_surface`'s docstring in `src/compare.jl` for
+   published values exactly (§3(c), "Deciphering life history and dispersal in the
+   Eocene", and figure 5). See `error_surface`'s docstring in `src/compare.jl` for
    the full technical detail. This package's `compare.jl` implements the corrected
    `dims=1` behavior.
 
